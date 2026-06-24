@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">To Fairy</string>
+    <string name="sensing_service_label">To Fairy 동행</string>
+    <!-- 부모(보호자)에게 보이는 설명. 아이 대상 문구 아님. -->
+    <string name="sensing_service_description">아이가 보는 화면 맥락을 기기 안에서만 살펴 요정이 함께 하도록 돕습니다. 내용은 저장되거나 전송되지 않습니다.</string>
+</resources>

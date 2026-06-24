@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      권한 원칙 (CLAUDE.md §4 / 불변식):
+        - 위치·연락처·메시지·카메라 권한은 요청하지 않는다. (규제 표면 축소 + 불변식)
+        - 아래 권한만 사용한다.
+      PACKAGE_USAGE_STATS / BIND_ACCESSIBILITY_SERVICE 는 일반 런타임 권한이 아니라
+      설정 화면에서 사용자(부모)가 직접 부여하는 특수 권한이다. (동의 게이트, 불변식 #6)
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <!--
+      INTERNET 은 digest 송신(유일 송신 게이트)에서만 쓰인다.
+      apiclient 는 E2EE 암호문 blob 만 전송한다. (CLAUDE.md §8)
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".ToFairyApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ToFairy"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ToFairy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          센싱: 포그라운드 앱·node-tree 텍스트·전환 이벤트 수신.
+          node-tree 텍스트는 EphemeralSignal 로만 다룬다. (불변식 #1/#2)
+          부모 동의 하에 설정에서 활성화된다. (불변식 #6)
+        -->
+        <service
+            android:name=".sensing.SensingAccessibilityService"
+            android:exported="false"
+            android:label="@string/sensing_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!--
+          요정/센싱 상시 구동 표시(케이스 A). 케이스 B는 세션 동안만 구동.
+          specialUse 사유는 부모 보호자용 동행 센싱이며, 세션 경계 밖에서는 시작조차 안 된다(불변식 #4).
+        -->
+        <service
+            android:name=".session.FairyForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-device child wellbeing companion (fairy) sensing within consented session." />
+        </service>
+    </application>
+</manifest>
