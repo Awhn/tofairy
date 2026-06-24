@@ -50,7 +50,7 @@ class HomeViewModel(
         runRouter(baseContext())
     }
 
-    /** 요정을 톡 건드림 → 라우터에 최근 상호작용 0분으로 컨텍스트를 주되, 인사를 강제하기 위해 짧은 침묵간격. */
+    /** 요정을 톡 건드림 → 충분히 시간이 흘렀다고 보고(침묵간격 충족) 라우터가 가벼운 인사를 고르게 한다. */
     fun onFairyTapped() {
         runRouter(baseContext(minutesSinceLastInteraction = 999))
     }

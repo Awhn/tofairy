@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.tofairy.child.AppContainer
 import app.tofairy.child.ToFairyApp
+import app.tofairy.child.fairy.FairyMood
 import app.tofairy.child.fairy.HomeScreen
 import app.tofairy.child.fairy.HomeViewModel
 import app.tofairy.child.onboarding.OnboardingScreen
@@ -36,24 +37,32 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun ToFairyRoot(container: AppContainer) {
+    // 암호화 저장소 로드 전에는 null. 이때 온보딩을 깜빡 노출하지 않도록 중립 화면을 보여준다.
     val state by container.relationshipStore.state.collectAsState(initial = null)
-    // 각성(온보딩) 완료 여부에 따라 분기. 세션 내 강제 전환을 위한 로컬 플래그도 둔다.
+    // 세션 내 강제 전환(온보딩 직후 전이)을 위한 로컬 플래그.
     var onboardingDone by remember { mutableStateOf(false) }
 
-    val awakened = state?.awakened == true || onboardingDone
+    when {
+        state == null -> {
+            // 로딩 중: 같은 비주얼 언어의 중립 무대(요정만 떠 있음).
+            FairyStage(mood = FairyMood.CALM, bubbleText = null)
+        }
 
-    if (!awakened) {
-        val vm: OnboardingViewModel = viewModel(
-            factory = factory { OnboardingViewModel(container.responseBank, container.audioPlayer, container.relationshipStore) },
-        )
-        OnboardingScreen(viewModel = vm, onFinished = { onboardingDone = true })
-    } else {
-        val vm: HomeViewModel = viewModel(
-            factory = factory {
-                HomeViewModel(container.router, container.responseBank, container.audioPlayer, container.relationshipStore)
-            },
-        )
-        HomeScreen(viewModel = vm)
+        state?.awakened == true || onboardingDone -> {
+            val vm: HomeViewModel = viewModel(
+                factory = factory {
+                    HomeViewModel(container.router, container.responseBank, container.audioPlayer, container.relationshipStore)
+                },
+            )
+            HomeScreen(viewModel = vm)
+        }
+
+        else -> {
+            val vm: OnboardingViewModel = viewModel(
+                factory = factory { OnboardingViewModel(container.responseBank, container.audioPlayer, container.relationshipStore) },
+            )
+            OnboardingScreen(viewModel = vm, onFinished = { onboardingDone = true })
+        }
     }
 }
 

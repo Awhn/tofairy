@@ -97,3 +97,4 @@ localstore (집계·관계만)  ──▶ digest.build → E2EE → apiclient.se
 ## 변경 이력
 * v0.1: 자녀 앱 개발 가이드 — 모듈 구조·Android 구성·인앱 플로우·Gemma 4 E2B 통합 지점·응답뱅크 번들·개발 순서. 온디바이스 LLM은 라우터/판단기로만(불변식 #3 강조).
 * v0.1-impl: 앱 골격 구현 — Compose 요정 UI·온보딩 각성 의식·응답뱅크 소비·규칙 라우터/규칙 엔진·ephemeral 타입·센싱 게이트·세션 경계·localstore(암호화)·digest 파이프라인·mock apiclient. 단위 테스트(불변식/라우터/규칙/응답뱅크).
+* v0.1-polish: 시각/품질 다듬기 — 요정에 부드러운 날개·날갯짓 추가(얼굴 없이 비-creepy 유지), 무한 애니메이션 `phase` 헬퍼로 중복 제거, 시스템바 인셋(safeDrawing) 처리, 말풍선 테마 색상화(다크 대응), 저장소 로딩 중 온보딩 깜빡임 버그 수정, 한국어 조사(와/과 등) 헬퍼, Compose @Preview 추가, 응답뱅크 대사 변형 추가.

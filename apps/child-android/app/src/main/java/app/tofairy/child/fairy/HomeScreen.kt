@@ -6,9 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Text
@@ -19,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.tofairy.child.ui.FairyStage
+import app.tofairy.child.ui.josaWaGwa
 
 /**
  * 홈 화면 (CLAUDE.md §10-1~2): "creepy 하지 않은 살아있는 요정" 데모.
@@ -42,11 +48,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                    ),
+                )
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = "${ui.fairyName}와 함께")
+            Text(text = "${ui.fairyName}${josaWaGwa(ui.fairyName)} 함께")
             // 데모용 트리거(실제 앱에서는 센싱/규칙 엔진이 자동으로 만든다).
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DemoChip("오래 봤어요") { viewModel.simulateContinuousUse() }

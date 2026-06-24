@@ -78,8 +78,10 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .padding(top = 16.dp)
             .clip(RoundedCornerShape(20.dp)),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shadowElevation = 4.dp,
+        tonalElevation = 1.dp,
     ) {
         Text(
             text = text,
