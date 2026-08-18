@@ -3,7 +3,7 @@ package app.tofairy.child.core
 /**
  * 불변식 #3 — 온디바이스 LLM은 라우터/판단기일 뿐, 화자가 아니다.
  *
- * 라우터(규칙 엔진 또는 Gemma function-calling)의 출력은 오직 이 [FairyIntent] (구조화 intent)
+ * 라우터(현재 규칙 엔진, 향후 별도 평가할 ML 라우터)의 출력은 오직 이 [FairyIntent] (구조화 intent)
  * 또는 분류 결과뿐이다. 모델의 자유 텍스트는 child-facing 경로에 절대 닿지 않는다.
  * 아이가 듣는 문장은 전량 responsebank 에서 선택된다.
  *
@@ -24,8 +24,8 @@ sealed interface FairyIntent {
         override val id = "promise_check_in"
     }
 
-    /** A축: 연령에 맞지 않을 수 있는 콘텐츠 앞에서 부드럽게 한 번 묻기(차단 아님, 불변식 #7). */
-    data class GentleContentPrompt(val severity: ContentSeverity) : FairyIntent {
+    /** 일일 A축 집계 뒤 현재 연령 경계 초과가 있었을 때의 부드러운 회고(실시간 차단 아님). */
+    data object GentleContentPrompt : FairyIntent {
         override val id = "gentle_content_prompt"
     }
 
@@ -51,7 +51,6 @@ sealed interface FairyIntent {
 
     enum class BreakReason { CONTINUOUS_USE, LATE_HOUR, RAPID_SWITCHING }
     enum class PromiseState { APPROACHING_LIMIT, AT_LIMIT, OVER_LIMIT, KEPT }
-    enum class ContentSeverity { MILD, NOTABLE }
     enum class DayMoment { MORNING, AFTERNOON, EVENING }
     enum class EncourageOccasion { PROMISE_KEPT, STREAK, SELF_STOPPED }
     enum class Awakening { ARRIVAL, NAMING, FIRST_BOND }

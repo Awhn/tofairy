@@ -9,9 +9,8 @@ import app.tofairy.child.core.FairyIntent
  *
  * 구현은 플러그러블:
  *  - [RuleBasedRouter]: 결정적 규칙(저사양 폴백/골격 기본값).
- *  - (후순위) GemmaFunctionCallRouter: Gemma 4 E2B function-calling. 자유 텍스트 출력 미사용,
- *    선택된 function call 만 [FairyIntent] 로 디코드.
- * 모델 선택은 앱 골격 후 벤치마크로 결정한다(저사양 기기 고려).
+ *  - (후순위) 별도 ML router 후보: 구조화 function call만 [FairyIntent]로 디코드.
+ * A축 Shieldstral과 라우터 모델은 완전히 별개이며, 라우터 모델 선택은 아직 Open Issue다.
  */
 fun interface Router {
     fun route(context: RouterContext): FairyIntent

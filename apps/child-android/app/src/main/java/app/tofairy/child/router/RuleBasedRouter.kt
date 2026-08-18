@@ -1,7 +1,7 @@
 package app.tofairy.child.router
 
 import app.tofairy.child.core.FairyIntent
-import app.tofairy.child.screening.axisa.AgeAppropriateness
+import app.tofairy.child.screening.axisa.AgeSuitability
 import app.tofairy.child.screening.axisb.UsagePatternSignal
 
 /**
@@ -13,7 +13,7 @@ import app.tofairy.child.screening.axisb.UsagePatternSignal
  *  3) 약속 진행 상태 → 체크인
  *  4) 그 외 한가하면 가벼운 인사(과도한 개입 억제)
  *
- * 추후 Gemma function-calling 라우터로 교체 가능하나, 본 구현은 저사양 폴백으로 영구 유지된다.
+ * 향후 별도 ML 라우터를 평가할 수 있으나, 본 구현은 저사양 폴백으로 유지된다.
  */
 class RuleBasedRouter(
     /** 동일 개입 반복 억제: 직전과 같은 intent 면 침묵으로 디바운스. */
@@ -32,13 +32,11 @@ class RuleBasedRouter(
 
     private fun decide(ctx: RouterContext): FairyIntent {
         // 1) A축
-        ctx.appropriateness?.let { a ->
-            when (a) {
-                AgeAppropriateness.ABOVE_AGE_NOTABLE ->
-                    return FairyIntent.GentleContentPrompt(FairyIntent.ContentSeverity.NOTABLE)
-                AgeAppropriateness.ABOVE_AGE_MILD ->
-                    return FairyIntent.GentleContentPrompt(FairyIntent.ContentSeverity.MILD)
-                AgeAppropriateness.WITHIN_AGE -> Unit
+        ctx.ageSuitability?.let { suitability ->
+            when (suitability) {
+                AgeSuitability.EXCEEDS_AGE_THRESHOLD ->
+                    return FairyIntent.GentleContentPrompt
+                AgeSuitability.WITHIN_AGE_THRESHOLD -> Unit
             }
         }
 

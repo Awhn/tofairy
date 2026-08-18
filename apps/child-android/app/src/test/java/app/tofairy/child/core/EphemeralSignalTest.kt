@@ -24,6 +24,7 @@ class EphemeralSignalTest {
 
         val ex = runCatching { signal.rawText }.exceptionOrNull()
         assertTrue(ex is IllegalStateException)
+        assertTrue(runCatching { signal.packageName }.exceptionOrNull() is IllegalStateException)
     }
 
     @Test
@@ -35,6 +36,7 @@ class EphemeralSignalTest {
             atElapsedMillis = 0L,
         )
         assertFalse(signal.toString().contains("TOP_SECRET_TEXT"))
+        assertFalse(signal.toString().contains("com.example"))
     }
 
     @Test

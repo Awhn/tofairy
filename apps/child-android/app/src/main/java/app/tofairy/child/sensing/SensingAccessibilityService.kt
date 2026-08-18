@@ -6,10 +6,11 @@ import android.view.accessibility.AccessibilityEvent
 import app.tofairy.child.core.EphemeralSignal
 
 /**
- * 센싱 입력 (CLAUDE.md §4) — 포그라운드 앱·node-tree 텍스트·전환 이벤트 수신.
+ * 센싱 입력 (CLAUDE.md §4) — 포그라운드 앱·전환 이벤트 수신.
  *
  * 불변식:
- *  - #1/#2: node-tree 텍스트는 [EphemeralSignal] 로만 다룬다. 디스크/로그/네트워크 경로 0.
+ *  - 라이브 이벤트 원문은 [EphemeralSignal] 로도 수집하지 않는다. 일일 A축은 별도 sampler가
+ *    선택한 screenshot+최소 metadata만 암호화 임시 저장한다.
  *  - #4: 케이스 B 요정 모드 세션 밖에서는 파이프라인이 시작조차 안 된다.
  *  - #6: 동의 미확인 시 센싱 비활성(시작 게이트).
  * 이 서비스는 신호를 만들기만 하고, [SensingGate] 가 닫혀 있으면 즉시 폐기하고 흘리지 않는다.
@@ -38,7 +39,8 @@ class SensingAccessibilityService : AccessibilityService() {
         val signal = EphemeralSignal(
             packageName = event.packageName?.toString().orEmpty(),
             kind = kind,
-            rawText = extractText(event),
+            // A축은 node text 기반 실시간 판정이 아니다. 이벤트는 checkpoint 후보 신호로만 쓴다.
+            rawText = null,
             atElapsedMillis = SystemClock.elapsedRealtime(),
         )
 
@@ -56,11 +58,5 @@ class SensingAccessibilityService : AccessibilityService() {
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         SensingGate.onServiceDisconnected()
         return super.onUnbind(intent)
-    }
-
-    /** 이벤트 텍스트만 가볍게 추출. 전체 node-tree 워크는 A축 필요 시 screening 안에서만 수행. */
-    private fun extractText(event: AccessibilityEvent): String? {
-        val joined = event.text.joinToString(separator = " ") { it?.toString().orEmpty() }
-        return joined.ifBlank { null }
     }
 }

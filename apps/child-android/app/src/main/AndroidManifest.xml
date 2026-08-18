@@ -42,8 +42,8 @@
         </activity>
 
         <!--
-          센싱: 포그라운드 앱·node-tree 텍스트·전환 이벤트 수신.
-          node-tree 텍스트는 EphemeralSignal 로만 다룬다. (불변식 #1/#2)
+          센싱: 포그라운드 앱·전환 이벤트 수신. node-tree 원문은 수집하지 않는다.
+          일일 A축 screenshot sampler/storage는 별도 목적 제한·암호화 경계로 구현한다.
           부모 동의 하에 설정에서 활성화된다. (불변식 #6)
         -->
         <service

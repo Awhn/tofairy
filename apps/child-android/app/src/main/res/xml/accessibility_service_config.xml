@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   센싱 파이프라인의 입력 채널 설정.
-  - 텍스트/노드 트리는 EphemeralSignal 로만 메모리에서 다루고 즉시 폐기한다(불변식 #1/#2).
+  - node-tree 원문은 수집하지 않는다. 이벤트는 screenshot checkpoint 후보를 알리는 신호다.
   - 세션(케이스 B) 밖에서는 SensingAccessibilityService 가 신호를 router 로 흘리지 않는다(불변식 #4).
-  canRetrieveWindowContent 는 화면 텍스트 판단(A축)에 필요. 저장/전송 경로는 없다.
+  canRetrieveWindowContent 사용 필요성은 sampler 구현 전 재검토한다. A축은 실시간 node-text 판정이 아니다.
 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"

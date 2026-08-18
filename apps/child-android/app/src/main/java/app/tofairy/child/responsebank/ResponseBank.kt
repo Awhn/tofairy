@@ -32,7 +32,7 @@ class ResponseBank private constructor(
     private fun slotKey(intent: FairyIntent): String? = when (intent) {
         is FairyIntent.SuggestBreak -> intent.reason.name
         is FairyIntent.PromiseCheckIn -> intent.state.name
-        is FairyIntent.GentleContentPrompt -> intent.severity.name
+        FairyIntent.GentleContentPrompt -> "EXCEEDS_THRESHOLD"
         is FairyIntent.Greeting -> intent.moment.name
         is FairyIntent.Encourage -> intent.occasion.name
         is FairyIntent.AwakeningStep -> intent.step.name

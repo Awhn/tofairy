@@ -10,7 +10,7 @@ fun FairyIntent.toMood(): FairyMood = when (this) {
     is FairyIntent.Greeting -> FairyMood.HAPPY
     is FairyIntent.Encourage -> FairyMood.CELEBRATE
     is FairyIntent.SuggestBreak -> FairyMood.GENTLE_ALERT
-    is FairyIntent.GentleContentPrompt -> FairyMood.GENTLE_ALERT
+    FairyIntent.GentleContentPrompt -> FairyMood.GENTLE_ALERT
     is FairyIntent.PromiseCheckIn -> when (state) {
         FairyIntent.PromiseState.KEPT, FairyIntent.PromiseState.AT_LIMIT -> FairyMood.CELEBRATE
         else -> FairyMood.GENTLE_ALERT

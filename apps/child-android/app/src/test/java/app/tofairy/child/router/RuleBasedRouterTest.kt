@@ -1,10 +1,9 @@
 package app.tofairy.child.router
 
 import app.tofairy.child.core.FairyIntent
-import app.tofairy.child.screening.axisa.AgeAppropriateness
+import app.tofairy.child.screening.axisa.AgeSuitability
 import app.tofairy.child.screening.axisb.UsagePatternSignal
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RuleBasedRouterTest {
@@ -17,14 +16,10 @@ class RuleBasedRouterTest {
             RouterContext(
                 dayMoment = RouterContext.DayMoment.AFTERNOON,
                 usageSignals = listOf(UsagePatternSignal.CONTINUOUS_USE),
-                appropriateness = AgeAppropriateness.ABOVE_AGE_NOTABLE,
+                ageSuitability = AgeSuitability.EXCEEDS_AGE_THRESHOLD,
             ),
         )
-        assertTrue(intent is FairyIntent.GentleContentPrompt)
-        assertEquals(
-            FairyIntent.ContentSeverity.NOTABLE,
-            (intent as FairyIntent.GentleContentPrompt).severity,
-        )
+        assertEquals(FairyIntent.GentleContentPrompt, intent)
     }
 
     @Test

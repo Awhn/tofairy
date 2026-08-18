@@ -9,7 +9,7 @@ import app.tofairy.child.responsebank.FairyLine
 import app.tofairy.child.responsebank.ResponseBank
 import app.tofairy.child.router.Router
 import app.tofairy.child.router.RouterContext
-import app.tofairy.child.screening.axisa.AgeAppropriateness
+import app.tofairy.child.screening.axisa.AgeSuitability
 import app.tofairy.child.screening.axisb.UsagePatternSignal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,9 +60,9 @@ class HomeViewModel(
         runRouter(baseContext().copy(usageSignals = listOf(UsagePatternSignal.CONTINUOUS_USE)))
     }
 
-    /** 데모: A축 부적절 콘텐츠 → 부드러운 묻기 intent 유도. */
+    /** 데모: 일일 A축 집계에서 현재 연령 경계 초과 → 부드러운 묻기 intent 유도. */
     fun simulateAboveAgeContent() {
-        runRouter(baseContext().copy(appropriateness = AgeAppropriateness.ABOVE_AGE_NOTABLE))
+        runRouter(baseContext().copy(ageSuitability = AgeSuitability.EXCEEDS_AGE_THRESHOLD))
     }
 
     /** 데모: 약속 달성 → 격려 intent. */

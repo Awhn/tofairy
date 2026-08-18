@@ -90,7 +90,7 @@ fun OnboardingScreen(
                 OnboardingViewModel.Step.CONSENT -> {
                     // 부모(보호자) 대상 동의 안내. 아이 문구와 구분되는 보호자용 텍스트.
                     Text(
-                        text = "보호자 확인이 필요해요.\n아이가 보는 화면 맥락은 기기 안에서만 살펴보며, 내용은 저장·전송되지 않습니다. 동의하시겠어요?",
+                        text = "보호자 확인이 필요해요.\n선택된 화면 샘플은 이 기기에 암호화해 잠깐 보관하고 하루 점검이 끝나면 삭제합니다. 원본은 서버나 부모 기기로 보내지 않습니다.",
                         textAlign = TextAlign.Center,
                     )
                     Button(

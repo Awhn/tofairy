@@ -1,6 +1,6 @@
 package app.tofairy.child.router
 
-import app.tofairy.child.screening.axisa.AgeAppropriateness
+import app.tofairy.child.screening.axisa.AgeSuitability
 import app.tofairy.child.screening.axisb.UsagePatternSignal
 
 /**
@@ -13,8 +13,8 @@ data class RouterContext(
     val dayMoment: DayMoment,
     /** B축 사용패턴 규칙 엔진의 신호(없으면 비어 있음). */
     val usageSignals: List<UsagePatternSignal> = emptyList(),
-    /** A축 적절성 판단 결과(없으면 null = 관련 콘텐츠 없음). */
-    val appropriateness: AgeAppropriateness? = null,
+    /** 일일 A축 집계가 만든 현재 연령 경계 판정(없으면 null = 관련 개입 없음). */
+    val ageSuitability: AgeSuitability? = null,
     /** 약속 진행 상태(0..1, null = 약속 미설정). */
     val promiseProgress: Float? = null,
     /** 직전 intent id — 같은 개입을 연달아 반복하지 않기 위한 디바운스 힌트. */

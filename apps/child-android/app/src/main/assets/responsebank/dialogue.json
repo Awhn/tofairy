@@ -55,11 +55,8 @@
       ]
     },
     "gentle_content_prompt": {
-      "MILD": [
-        { "id": "content_mild_1", "text": "잠깐, 이건 좀 더 큰 친구들한테 어울리는 것 같아. 다른 거 같이 찾아볼까?", "audioClip": "content_mild_1" }
-      ],
-      "NOTABLE": [
-        { "id": "content_notable_1", "text": "이건 지금 우리한테 안 맞는 것 같아. 내가 더 재밌는 걸 알아. 같이 갈래?", "audioClip": "content_notable_1" }
+      "EXCEEDS_THRESHOLD": [
+        { "id": "content_threshold_1", "text": "오늘 본 화면 중에 조금 큰 친구에게 더 잘 맞는 것이 있었던 것 같아. 다음에는 다른 걸 같이 골라볼까?", "audioClip": "content_threshold_1" }
       ]
     },
     "encourage": {
