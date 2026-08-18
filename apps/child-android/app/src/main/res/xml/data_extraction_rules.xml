@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  관계/기억/집계 상태는 온디바이스 암호화 저장만 한다(불변식 #1/#2).
+  클라우드/디바이스 전송 백업으로 평문이 빠져나가지 않도록 백업을 비활성화한다.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+    </device-transfer>
+</data-extraction-rules>

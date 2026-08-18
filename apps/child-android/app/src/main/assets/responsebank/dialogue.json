@@ -1,0 +1,75 @@
+{
+  "_comment": "응답뱅크 (CLAUDE.md §7). 아이가 듣는 모든 문장의 유일한 출처. 번들 내장·OTA 없음(앱 업데이트로만 갱신). 본 앱은 ../../docs/30_대화_응답뱅크.md 스키마의 소비자이며, 아래는 골격용 임시 스키마/콘텐츠. 모든 문구는 쉬운 언어, 비난·훈계·비밀 강요 금지(불변식 #7).",
+  "schemaVersion": "0.1.0",
+  "locale": "ko",
+  "lines": {
+    "awakening_step": {
+      "ARRIVAL": [
+        { "id": "awk_arrival_1", "text": "안녕? 나 이제 막 깨어났어. 네가 보여서 참 좋아.", "audioClip": "awk_arrival_1" }
+      ],
+      "NAMING": [
+        { "id": "awk_naming_1", "text": "나한테 이름을 지어줄래? 그럼 우리 진짜 친구가 되는 거야.", "audioClip": "awk_naming_1" }
+      ],
+      "FIRST_BOND": [
+        { "id": "awk_bond_1", "text": "고마워! 이제부터 네 곁에 있을게. 우리 천천히 친해지자.", "audioClip": "awk_bond_1" }
+      ]
+    },
+    "greeting": {
+      "MORNING": [
+        { "id": "greet_morning_1", "text": "좋은 아침! 오늘도 너랑 같이 있어서 기뻐.", "audioClip": "greet_morning_1" },
+        { "id": "greet_morning_2", "text": "잘 잤어? 오늘은 어떤 재밌는 일이 있을까?", "audioClip": "greet_morning_2" }
+      ],
+      "AFTERNOON": [
+        { "id": "greet_afternoon_1", "text": "안녕! 지금 뭐 하고 있었어?", "audioClip": "greet_afternoon_1" },
+        { "id": "greet_afternoon_2", "text": "여기 있었구나! 나도 같이 놀아도 돼?", "audioClip": "greet_afternoon_2" }
+      ],
+      "EVENING": [
+        { "id": "greet_evening_1", "text": "저녁이네. 오늘 하루 어땠어?", "audioClip": "greet_evening_1" },
+        { "id": "greet_evening_2", "text": "오늘도 수고했어. 가장 즐거웠던 일은 뭐였어?", "audioClip": "greet_evening_2" }
+      ]
+    },
+    "suggest_break": {
+      "CONTINUOUS_USE": [
+        { "id": "break_cont_1", "text": "우리 잠깐 눈 좀 쉬게 해줄까? 나랑 같이 기지개 한 번 켜자!", "audioClip": "break_cont_1" },
+        { "id": "break_cont_2", "text": "조금 오래 봤네. 물 한 모금 마시고 올래? 내가 여기서 기다릴게.", "audioClip": "break_cont_2" }
+      ],
+      "LATE_HOUR": [
+        { "id": "break_late_1", "text": "밤이 깊었네. 내일도 재밌게 놀려면 우리 슬슬 쉴까?", "audioClip": "break_late_1" }
+      ],
+      "RAPID_SWITCHING": [
+        { "id": "break_switch_1", "text": "이것저것 바쁘게 보고 있구나. 잠깐 멈춰서 좋아하는 거 하나만 골라볼래?", "audioClip": "break_switch_1" }
+      ]
+    },
+    "promise_check_in": {
+      "APPROACHING_LIMIT": [
+        { "id": "promise_near_1", "text": "오늘 약속한 시간이 조금 남았어. 마무리할 준비를 해볼까?", "audioClip": "promise_near_1" }
+      ],
+      "AT_LIMIT": [
+        { "id": "promise_at_1", "text": "약속한 시간이 다 됐어. 오늘 잘 지켰네, 멋지다!", "audioClip": "promise_at_1" }
+      ],
+      "OVER_LIMIT": [
+        { "id": "promise_over_1", "text": "시간이 조금 지났어. 괜찮아, 지금 멈추면 돼. 같이 해보자.", "audioClip": "promise_over_1" }
+      ],
+      "KEPT": [
+        { "id": "promise_kept_1", "text": "오늘 약속을 스스로 지켰구나. 정말 자랑스러워!", "audioClip": "promise_kept_1" }
+      ]
+    },
+    "gentle_content_prompt": {
+      "EXCEEDS_THRESHOLD": [
+        { "id": "content_threshold_1", "text": "오늘 본 화면 중에 조금 큰 친구에게 더 잘 맞는 것이 있었던 것 같아. 다음에는 다른 걸 같이 골라볼까?", "audioClip": "content_threshold_1" }
+      ]
+    },
+    "encourage": {
+      "PROMISE_KEPT": [
+        { "id": "enc_kept_1", "text": "약속을 지키다니, 너 정말 대단해!", "audioClip": "enc_kept_1" },
+        { "id": "enc_kept_2", "text": "오늘도 약속을 지켰네! 나는 네가 참 자랑스러워.", "audioClip": "enc_kept_2" }
+      ],
+      "STREAK": [
+        { "id": "enc_streak_1", "text": "며칠째 계속 잘하고 있어! 나 너무 신나.", "audioClip": "enc_streak_1" }
+      ],
+      "SELF_STOPPED": [
+        { "id": "enc_self_1", "text": "스스로 멈췄구나. 그거 진짜 어려운 건데, 최고야!", "audioClip": "enc_self_1" }
+      ]
+    }
+  }
+}
