@@ -11,7 +11,7 @@ import app.tofairy.child.core.EphemeralSignal
  * 불변식:
  *  - 라이브 이벤트 원문은 [EphemeralSignal] 로도 수집하지 않는다. 일일 A축은 별도 sampler가
  *    선택한 screenshot+최소 metadata만 암호화 임시 저장한다.
- *  - #4: 케이스 B 요정 모드 세션 밖에서는 파이프라인이 시작조차 안 된다.
+ *  - #4: 케이스 A/B 모두 명시적 Fairy Session 밖에서는 파이프라인이 시작조차 안 된다.
  *  - #6: 동의 미확인 시 센싱 비활성(시작 게이트).
  * 이 서비스는 신호를 만들기만 하고, [SensingGate] 가 닫혀 있으면 즉시 폐기하고 흘리지 않는다.
  */
@@ -58,5 +58,10 @@ class SensingAccessibilityService : AccessibilityService() {
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         SensingGate.onServiceDisconnected()
         return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        SensingGate.onServiceDisconnected()
+        super.onDestroy()
     }
 }

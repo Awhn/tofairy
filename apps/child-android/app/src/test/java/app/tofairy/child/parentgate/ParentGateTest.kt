@@ -35,6 +35,7 @@ class ParentGateTest {
         assertEquals(emptyList<ContextDigest>(), (access as ParentDataAccess.Granted).digests)
         assertEquals(1, sourceReads)
         assertEquals(ParentAuthState.AUTHENTICATED, gate.authState)
+        assertEquals(ParentSettingsAccess.GRANTED, session.accessSettings())
     }
 
     @Test
@@ -49,6 +50,7 @@ class ParentGateTest {
         val access = session.readDigests()
 
         assertEquals(ParentDataAccess.Denied, access)
+        assertEquals(ParentSettingsAccess.DENIED, session.accessSettings())
         assertFalse(session.isActive)
         assertEquals(0, sourceReads)
     }
@@ -75,6 +77,23 @@ class ParentGateTest {
         )
     }
 
+    @Test
+    fun parentAuthentication_closesSharedChildModeBeforePinVerification() {
+        var childModeClosed = false
+        val gate = ParentGate(
+            credentialStore = ParentPinCredentialStore { pin ->
+                assertTrue(childModeClosed)
+                pin.contentEquals("2468".toCharArray())
+            },
+            digestSource = ParentDigestSource { emptyList() },
+            childModeBoundary = SharedDeviceChildModeBoundary { childModeClosed = true },
+        )
+
+        assertTrue(
+            gate.authenticate("2468".toCharArray()) is ParentAuthenticationResult.Authenticated,
+        )
+    }
+
     private fun gate(onSourceRead: () -> Unit): ParentGate = ParentGate(
         credentialStore = ParentPinCredentialStore { pin ->
             pin.contentEquals("2468".toCharArray())
@@ -83,5 +102,6 @@ class ParentGateTest {
             onSourceRead()
             emptyList()
         },
+        childModeBoundary = SharedDeviceChildModeBoundary { },
     )
 }

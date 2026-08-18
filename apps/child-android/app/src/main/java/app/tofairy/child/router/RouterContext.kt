@@ -6,8 +6,8 @@ import app.tofairy.child.screening.axisb.UsagePatternSignal
 /**
  * 라우터 입력 컨텍스트 (판단 결과 · 시간대 · 최근 상호작용).
  *
- * 주의(불변식 #1/#2): 여기에는 콘텐츠 원문/민감 라벨이 들어오지 않는다.
- * screening 단계에서 ephemeral 입력을 소비하고 폐기한 뒤, '판단 결과'(enum/집계)만 전달된다.
+ * 여기에는 screenshot·콘텐츠 원문·dimension별 민감 판정이 들어오지 않는다. 일일 A축은
+ * 암호화 임시 샘플을 집계한 뒤 원본과 중간 판정을 폐기하고 허용된 enum/집계만 전달한다.
  */
 data class RouterContext(
     val dayMoment: DayMoment,

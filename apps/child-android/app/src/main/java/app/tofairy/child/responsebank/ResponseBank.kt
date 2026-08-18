@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * 응답뱅크 (CLAUDE.md §7) — intent → 대사 선택의 유일한 출처.
+ * 응답뱅크 (CLAUDE.md §6) — intent → 대사 선택의 유일한 출처.
  *
  * 불변식 #3: 아이가 듣는 문장은 전량 여기서 선택된다. 모델 자유 텍스트가 [FairyLine] 을 만들 수 없다.
  * 자산은 앱 번들에 내장(`assets/responsebank/dialogue.json`)되며 OTA 없음.

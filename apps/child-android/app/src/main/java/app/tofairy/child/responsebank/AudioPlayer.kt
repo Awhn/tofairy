@@ -5,7 +5,7 @@ import android.media.MediaPlayer
 import android.util.Log
 
 /**
- * 사전 녹음 클립의 온디바이스 재생 (CLAUDE.md §7). 지연 0 목표.
+ * 사전 녹음 클립의 온디바이스 재생 (CLAUDE.md §6). 지연 0 목표.
  * 클립은 `assets/responsebank/audio/<clip>.ogg` 에 번들. 누락 시 무해하게 스킵(텍스트만 노출).
  */
 interface AudioPlayer {

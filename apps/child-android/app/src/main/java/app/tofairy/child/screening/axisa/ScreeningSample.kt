@@ -87,5 +87,7 @@ data class ScreeningSample(
 interface ScreeningSampleStore {
     suspend fun pendingSamples(): List<ScreeningSample>
     suspend fun updateState(sampleId: String, state: ScreeningSampleState)
+    /** 지정 sample 전체를 같은 batch의 AGGREGATED 상태로 원자적으로 기록한다. */
+    suspend fun markBatchAggregated(sampleIds: Set<String>, batchId: String)
     suspend fun purgeRawSample(sampleId: String)
 }

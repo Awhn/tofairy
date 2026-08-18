@@ -16,7 +16,7 @@
 
 다음 원칙은 제품의 정체성이자 법적·프라이버시 경계다. 편의·성능·기능을 이유로 위반하지 않는다.
 
-1. **원시 스크리닝 자료는 자녀 기기를 떠나지 않는다.** 화면 원문, 스크린샷, URL·검색어·영상명, 앱 내부 콘텐츠명, 세부 사용 로그와 dimension별 판정은 백엔드나 부모 기기로 보내지 않는다. 부모에게 전달 가능한 콘텐츠 관련 산출물은 허용된 집계와 사전 정의 `DigestHighlight`로 구성한 `ContextDigest`뿐이며, 이 또한 E2EE로 암호화한다.
+1. **원시 스크리닝 자료는 자녀 기기를 떠나지 않는다.** 화면 원문, 스크린샷, URL·검색어·영상명, 앱 내부 콘텐츠명, 세부 사용 로그와 dimension별 판정은 백엔드나 부모 기기로 보내지 않는다. 부모에게 전달 가능한 콘텐츠 관련 산출물은 허용된 집계와 사전 정의 `DigestHighlight`로 구성한 `ContextDigest`뿐이다. 기기 간 전달은 E2EE로 암호화하고, 공유 기기 안의 전달은 PIN 인증을 거친 `LocalDataGate`로 제한한다.
 2. **원시 자료와 민감 중간 결과는 목적이 끝나면 폐기한다.** 일일 A축 분석에 필요한 최소 스크린샷과 메타데이터는 자녀 기기의 암호화된 임시 저장소에만 제한적으로 보존할 수 있다. 정상 집계 후 원본 sample을 삭제하고, screenshot별 `DimensionAssessment`는 로그·DB·다이제스트에 남기지 않는다. 메모리 전용 신호는 소비 직후 폐기한다.
 3. **요정은 생성된 문장을 말하지 않는다.** 아이가 듣는 모든 발화는 사람이 작성·검수한 응답 뱅크에서 선택한다. 현재 Router는 규칙 기반이며, 향후 ML Router를 검토하더라도 구조화 intent만 출력한다. A축 Shieldstral과 Router는 서로 독립이며 어느 모델의 자유 텍스트도 child-facing 경로에 닿지 않는다.
 4. **케이스 A/B 모두 명시적인 `FairySession` 안에서만 센싱한다.** `ConsentState.CONFIRMED && FairySession.ACTIVE && AccessibilityService.CONNECTED`일 때만 센싱을 허용한다. 자녀 전용폰인 케이스 A도 설치·서비스 연결만으로 자동 센싱하지 않는다. 케이스 B에서는 세션 밖 부모 사용을 절대 스크리닝하지 않으며, 부모 영역은 PIN 인증과 `LocalDataGate`를 거쳐 허용된 부모용 projection만 읽는다.
@@ -109,7 +109,7 @@ HPKE의 ephemeral sender key를 사용하더라도 그 목적은 메시지별 �
 - **sample 저장 전** → 최소 metadata만 포함하고 encrypted temporary store만 사용. URL·검색어·화면 전체 텍스트를 별도 필드로 보존하지 않음.
 - **일일 A축 완료 후** → aggregate 생성이 정상 완료된 sample의 screenshot 원본과 dimension assessment 폐기. 분석 실패 sample은 retry 정책 범위에서만 유지.
 - **다이제스트 생성** → 기간 집계와 누적 관계 snapshot을 분리하고 arbitrary string highlight·원시 콘텐츠·dimension 결과 포함 금지.
-- **다이제스트 송신 전** → E2EE 봉인 후 child `PendingDigestStore`에 저장. 부모 ACK 전 삭제 금지, ACK 후 pending digest와 해당 source aggregate 정리.
+- **다이제스트 송신 전** → E2EE 봉인 후 child `PendingDigestStore`에 저장. recipient ACK 전 해당 pending delivery 삭제 금지. source aggregate는 확정된 recipient 완료 정책 충족 후 정리하며 단일 recipient면 해당 ACK 직후 정리.
 - **케이스 B 부모 영역 진입** → PIN 인증과 `LocalDataGate` 강제. child raw store·screening state·전체 `RelationshipState` 직접 접근 금지.
 - **아이 대상 고지 화면** → 쉬운 언어 카피 + 투명성 표시("요정이 ~라고 전했어").
 
@@ -121,10 +121,10 @@ HPKE의 ephemeral sender key를 사용하더라도 그 목적은 메시지별 �
 - 자녀 데이터를 다루는 클래스/함수에는 `// INVARIANT:` 주석으로 어떤 경계를 지키는지 명시한다.
 - `Ephemeral*`은 메모리 전용·소비 후 폐기 타입에만 사용한다. 일일 분석을 위해 제한적으로 보존하는 raw sample은 `ScreeningSample`/`EncryptedLocalImage`와 전용 encrypted temporary store로 분리한다.
 - `ScreeningSample`과 `DimensionAssessment`는 digest·API DTO로 변환할 수 없게 의존 방향을 제한한다.
-- 평문 `ContextDigest`는 기기 내부 builder/sealer 경계까지만 허용한다. 네트워크 모듈은 E2EE ciphertext를 담은 relay envelope만 받을 수 있다.
+- 기기 간 네트워크 경로의 평문 `ContextDigest`는 builder/sealer 경계를 벗어나지 않는다. 케이스 B의 같은 기기 전달은 PIN-authenticated `LocalDataGate`가 허용한 parent projection만 예외적으로 통과시킨다. 네트워크 모듈은 E2EE ciphertext relay envelope만 받을 수 있다.
 - highlight는 enum/sealed code만 허용하고 자유 문자열을 금지한다.
 - confidence는 외부 도메인 모델, DB, digest, 서버 payload, 로그, 부모 UI에 넣지 않는다.
-- delivery/ACK는 `digestId`를 기준으로 중복 안전(idempotent)해야 한다.
+- parent 중복 처리는 `digestId`, child delivery/ACK는 `(digestId, recipientDeviceId)`를 기준으로 멱등이어야 한다.
 
 ---
 

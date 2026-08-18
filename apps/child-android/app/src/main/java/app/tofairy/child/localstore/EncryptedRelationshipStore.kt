@@ -14,7 +14,7 @@ import java.io.File
  * [RelationshipStore] 의 Jetpack Security 기반 구현 (골격 단계).
  *
  * MasterKey 는 Android Keystore(가능하면 StrongBox)로 보호된다.
- * 최종 단계에서 libsodium/Tink 로 교체 가능하나 인터페이스는 동일하게 유지한다(../../docs/50 §1).
+ * 최종 키·저장소 수명주기는 ../../docs/50 §4 계약에 맞춰 검증한다.
  * 저장 대상은 [RelationshipState] (집계/관계만) — 원시 라벨은 들어올 수 없는 타입 구조다.
  */
 class EncryptedRelationshipStore(
@@ -62,7 +62,7 @@ class EncryptedRelationshipStore(
         if (!file.exists()) return RelationshipState()
         return runCatching {
             val bytes = encryptedFile().openFileInput().use { it.readBytes() }
-            json.decodeFromString(RelationshipState.serializer(), bytes.decodeToString())
+            RelationshipStateCodec.decode(bytes.decodeToString(), json)
         }.getOrDefault(RelationshipState())
     }
 
@@ -70,7 +70,7 @@ class EncryptedRelationshipStore(
         // EncryptedFile 은 덮어쓰기를 허용하지 않으므로 기존 파일을 먼저 제거.
         if (file.exists()) file.delete()
         encryptedFile().openFileOutput().use { out ->
-            out.write(json.encodeToString(RelationshipState.serializer(), state).encodeToByteArray())
+            out.write(RelationshipStateCodec.encode(state, json).encodeToByteArray())
         }
     }
 

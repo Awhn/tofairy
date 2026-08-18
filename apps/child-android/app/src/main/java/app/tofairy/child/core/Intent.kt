@@ -1,10 +1,11 @@
 package app.tofairy.child.core
 
 /**
- * 불변식 #3 — 온디바이스 LLM은 라우터/판단기일 뿐, 화자가 아니다.
+ * 불변식 #3 — Router는 화자가 아니다.
  *
- * 라우터(현재 규칙 엔진, 향후 별도 평가할 ML 라우터)의 출력은 오직 이 [FairyIntent] (구조화 intent)
- * 또는 분류 결과뿐이다. 모델의 자유 텍스트는 child-facing 경로에 절대 닿지 않는다.
+ * 현재 규칙 Router와 향후 별도 평가할 ML Router의 출력은 오직 이 [FairyIntent]다.
+ * A축 Shieldstral의 binary 분류 타입은 별도 screening package에 있고 이 계약과 섞지 않는다.
+ * 어떤 모델의 자유 텍스트도 child-facing 경로에 닿지 않는다.
  * 아이가 듣는 문장은 전량 responsebank 에서 선택된다.
  *
  * 따라서 이 타입에는 자유 텍스트 필드가 없다. (모델이 채울 수 있는 message/utterance 필드 금지)

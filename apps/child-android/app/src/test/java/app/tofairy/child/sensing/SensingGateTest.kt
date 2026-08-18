@@ -38,7 +38,7 @@ class SensingGateTest {
 
     @Test
     fun consentConfirmed_butSessionInactive_deniesSensing() {
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         SensingGate.onServiceConnected()
 
         assertFalse(SensingGate.isOpen)
@@ -48,24 +48,24 @@ class SensingGateTest {
     @Test
     fun confirmedConsent_activeSession_connectedService_allowsSensing() {
         val session = session(FairyDeviceMode.SHARED_PARENT_CHILD_DEVICE)
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         session.start()
         SensingGate.onServiceConnected()
 
         assertTrue(SensingGate.isOpen)
         assertEquals(session.identity, SensingGate.activeSessionIdentity)
-        assertTrue(SensingGate.sink === sink)
+        assertTrue(SensingGate.sink != null)
     }
 
     @Test
     fun consentRevoked_duringActiveSession_immediatelyClosesGate() {
         val session = session(FairyDeviceMode.SHARED_PARENT_CHILD_DEVICE)
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         session.start()
         SensingGate.onServiceConnected()
         assertTrue(SensingGate.isOpen)
 
-        SensingGate.setConsentState(ConsentState.REVOKED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.REVOKED)
 
         assertEquals(ConsentState.REVOKED, SensingGate.consentState)
         assertFalse(SensingGate.isOpen)
@@ -77,7 +77,7 @@ class SensingGateTest {
     fun bothDeviceModes_requireExplicitSession() {
         FairyDeviceMode.entries.forEachIndexed { index, mode ->
             SensingGate.resetForTests()
-            SensingGate.setConsentState(ConsentState.CONFIRMED)
+            SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
             SensingGate.onServiceConnected()
             assertFalse("$mode must not bypass the session boundary", SensingGate.isOpen)
 
@@ -95,7 +95,7 @@ class SensingGateTest {
     @Test
     fun serviceDisconnect_closesGateWithoutDestroyingSession() {
         val session = session(FairyDeviceMode.DEDICATED_CHILD_DEVICE)
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         session.start()
         SensingGate.onServiceConnected()
 
@@ -104,6 +104,35 @@ class SensingGateTest {
         assertFalse(SensingGate.isOpen)
         assertTrue(session.isActive)
         assertEquals(session.identity, SensingGate.activeSessionIdentity)
+    }
+
+    @Test
+    fun cachedSinkCapability_isInvalidatedByConsentRevocation() {
+        var delivered = 0
+        val countingSink = SignalSink { signal ->
+            delivered += 1
+            signal.discard()
+        }
+        val session = FairySession.create(
+            FairySessionIdentity("cached-capability", FairyDeviceMode.SHARED_PARENT_CHILD_DEVICE),
+            countingSink,
+        )
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
+        session.start()
+        SensingGate.onServiceConnected()
+        val cachedCapability = checkNotNull(SensingGate.sink)
+
+        SensingGate.applyAuthoritativeConsentState(ConsentState.REVOKED)
+        val signal = app.tofairy.child.core.EphemeralSignal(
+            packageName = "app.example",
+            kind = app.tofairy.child.core.EphemeralSignal.SignalKind.WINDOW_STATE_CHANGED,
+            rawText = "must be discarded",
+            atElapsedMillis = 1L,
+        )
+        cachedCapability.onSignal(signal)
+
+        assertEquals(0, delivered)
+        assertTrue(signal.isDiscarded)
     }
 
     private fun session(mode: FairyDeviceMode): FairySession = FairySession.create(

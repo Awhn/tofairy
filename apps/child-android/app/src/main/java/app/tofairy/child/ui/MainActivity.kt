@@ -59,7 +59,14 @@ private fun ToFairyRoot(container: AppContainer) {
 
         else -> {
             val vm: OnboardingViewModel = viewModel(
-                factory = factory { OnboardingViewModel(container.responseBank, container.audioPlayer, container.relationshipStore) },
+                factory = factory {
+                    OnboardingViewModel(
+                        container.responseBank,
+                        container.audioPlayer,
+                        container.relationshipStore,
+                        container.consentSynchronizer,
+                    )
+                },
             )
             OnboardingScreen(viewModel = vm, onFinished = { onboardingDone = true })
         }

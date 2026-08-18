@@ -46,7 +46,7 @@ class ConsentSynchronizerTest {
         val api = MockApiClient(currentConsentState = ConsentState.CONFIRMED).apply {
             consentStatusAvailable = false
         }
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         val synchronizer = ConsentSynchronizer(api, FakeConsentControlChannel())
 
         val result = synchronizer.refreshAtStartup()
@@ -65,7 +65,7 @@ class ConsentSynchronizerTest {
             FairySessionIdentity("active-session", FairyDeviceMode.DEDICATED_CHILD_DEVICE),
             SignalSink { signal -> signal.discard() },
         )
-        SensingGate.setConsentState(ConsentState.CONFIRMED)
+        SensingGate.applyAuthoritativeConsentState(ConsentState.CONFIRMED)
         session.start()
         SensingGate.onServiceConnected()
         synchronizer.connectControlChannel()
@@ -94,6 +94,79 @@ class ConsentSynchronizerTest {
         channel.emit(ConsentUpdate(ConsentState.CONFIRMED, revision = 19, updatedAt = 999))
 
         assertEquals(ConsentState.REVOKED, SensingGate.consentState)
+    }
+
+    @Test
+    fun controlRevocationBeforeStartupResponse_isNotResetOrRolledBack() = runBlocking {
+        val api = MockApiClient(
+            currentConsentState = ConsentState.CONFIRMED,
+            consentRevision = 19,
+            consentUpdatedAt = 999,
+        )
+        val channel = FakeConsentControlChannel()
+        val synchronizer = ConsentSynchronizer(api, channel)
+        synchronizer.connectControlChannel()
+        channel.emit(ConsentUpdate(ConsentState.REVOKED, revision = 20, updatedAt = 200))
+
+        val effective = synchronizer.refreshAtStartup().getOrThrow()
+
+        assertEquals(ConsentState.REVOKED, SensingGate.consentState)
+        assertEquals(ConsentState.REVOKED, effective.state)
+        assertEquals(20L, effective.revision)
+    }
+
+    @Test
+    fun disconnectClosesGate_andFailedReconnectRefreshStaysFailClosed() = runBlocking {
+        val api = MockApiClient(
+            currentConsentState = ConsentState.CONFIRMED,
+            consentRevision = 10,
+            consentUpdatedAt = 100,
+        )
+        val synchronizer = ConsentSynchronizer(api, FakeConsentControlChannel())
+        synchronizer.refreshAtStartup().getOrThrow()
+        assertEquals(ConsentState.CONFIRMED, SensingGate.consentState)
+
+        synchronizer.onControlChannelDisconnected()
+        api.consentStatusAvailable = false
+
+        assertEquals(ConsentState.UNKNOWN, SensingGate.consentState)
+        assertTrue(synchronizer.refreshAfterReconnect().isFailure)
+        assertEquals(ConsentState.UNKNOWN, SensingGate.consentState)
+    }
+
+    @Test
+    fun reconnectRefresh_reappliesSameRevisionAuthoritativeState() = runBlocking {
+        val api = MockApiClient(
+            currentConsentState = ConsentState.CONFIRMED,
+            consentRevision = 10,
+            consentUpdatedAt = 100,
+        )
+        val synchronizer = ConsentSynchronizer(api, FakeConsentControlChannel())
+        synchronizer.refreshAtStartup().getOrThrow()
+
+        synchronizer.onControlChannelDisconnected()
+        val effective = synchronizer.refreshAfterReconnect().getOrThrow()
+
+        assertEquals(ConsentState.CONFIRMED, effective.state)
+        assertEquals(ConsentState.CONFIRMED, SensingGate.consentState)
+    }
+
+    @Test
+    fun reconnectRefresh_withLowerRevisionRemainsFailClosed() = runBlocking {
+        val api = MockApiClient(
+            currentConsentState = ConsentState.REVOKED,
+            consentRevision = 20,
+            consentUpdatedAt = 200,
+        )
+        val synchronizer = ConsentSynchronizer(api, FakeConsentControlChannel())
+        synchronizer.refreshAtStartup().getOrThrow()
+
+        synchronizer.onControlChannelDisconnected()
+        api.currentConsentState = ConsentState.CONFIRMED
+        api.consentRevision = 19
+
+        assertTrue(synchronizer.refreshAfterReconnect().isFailure)
+        assertEquals(ConsentState.UNKNOWN, SensingGate.consentState)
     }
 
     private class FakeConsentControlChannel : ConsentControlChannel {

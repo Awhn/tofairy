@@ -4,7 +4,7 @@
 
 ## 0. 이 앱이 하는 일
 
-자녀(만 7~9세)가 사용하는 **명시적 `FairySession`** 안에서 sensing → 온디바이스 판단 → 요정과의 관계형 상호작용을 수행한다. 케이스 A(자녀 전용폰)와 케이스 B(공유폰) 모두 session을 요구한다. 부모에게는 원시 자료가 아니라 허용된 집계로 만든 E2EE `ContextDigest`만 전달한다.
+자녀(만 7~9세)가 사용하는 **명시적 `FairySession`** 안에서 sensing → 온디바이스 판단 → 요정과의 관계형 상호작용을 수행한다. 케이스 A(자녀 전용폰)와 케이스 B(공유폰) 모두 session을 요구한다. 부모에게는 원시 자료가 아니라 허용된 집계로 만든 `ContextDigest`만 전달한다. 기기 간 경로는 E2EE를 사용하고, 공유 기기 로컬 경로는 PIN 인증과 `LocalDataGate`를 사용한다.
 
 ## 1. 앱 불변식
 
@@ -39,9 +39,8 @@ app.tofairy.child/
 ├── sensing/           # fail-closed SensingGate + AccessibilityService/control wiring
 ├── session/           # A/B 공통 FairySession identity/state/lifecycle
 ├── screening/
-│   ├── axisa/         # 공식 등급 우선 + Shieldstral current-threshold batch
-│   ├── axisb/         # 사용패턴 rule engine
-│   └── sample/        # sampler·encrypted temporary sample store·daily job·purge
+│   ├── axisa/         # sampler·temporary sample store·공식 등급·Shieldstral daily job
+│   └── axisb/         # 사용패턴 rule engine
 ├── router/            # 상황 → structured intent (현재 rule-based)
 ├── responsebank/      # intent → 검수 대사·오디오
 ├── fairy/             # 요정 UI·상호작용
@@ -89,7 +88,9 @@ AND AccessibilityService connected
 - 상태 타입: `ConsentState.UNKNOWN`, `CONFIRMED`, `REVOKED`
 - control abstraction: `ConsentUpdate`, `ConsentControlChannel`, `ConsentControlListener`, `ConsentSynchronizer`
 - 부모 철회 → backend `REVOKED` → control/wake-up/active relay signal → child synchronizer → gate close
+- `ConsentStatus`/`ConsentUpdate`의 monotonic server `revision`으로 순서를 정하고 동일 revision 충돌에서는 `REVOKED`를 우선한다. `updatedAt`만으로 ordering하지 않는다.
 - 앱 기동과 relay 재연결 시 최신 consent state 조회
+- control/relay 연결 단절 시 이전 `CONFIRMED`를 재사용하지 않고 `UNKNOWN`으로 닫은 뒤 authenticated event/status로 freshness 회복
 - 완전히 offline인 child에는 즉시 철회가 전달되지 않는 한계가 있음
 - TTL/signed lease는 필수 구조가 아니며 Open Issue
 
@@ -103,9 +104,11 @@ control/push payload에는 consent control 정보만 넣고 screenshot이나 dig
 
 ```kotlin
 data class ScreeningSample(
+    val sampleId: String,
     val screenshot: EncryptedLocalImage,
     val capturedAt: Long,
     val metadata: ScreeningMetadata,
+    val state: ScreeningSampleState = ScreeningSampleState.ENCRYPTED_LOCAL,
 )
 
 interface ScreeningSampler {
@@ -154,6 +157,8 @@ CAPTURED
 → RAW_SAMPLE_PURGED
 ```
 
+`CAPTURED`는 암호화 저장 전의 순간적 lifecycle event이며 persisted `ScreeningSampleState`는 `ENCRYPTED_LOCAL`부터 시작한다. `RAW_SAMPLE_PURGED`는 record가 삭제된 상태라 enum에 남기지 않는다.
+
 일일 job은 충전 중, 화면 꺼짐, 유휴 시간, 지정 batch 시간 등을 후보 실행 조건으로 삼는다. 실시간 latency를 목표로 하지 않는다. aggregate 생성까지 정상 완료된 sample만 삭제한다. 추론/집계 실패 시 retry를 위해 sample을 당장 잘못 삭제하지 않되 보존 기간은 Open Issue다. screenshot purge는 digest ACK와 연결하지 않는다.
 
 ```kotlin
@@ -163,13 +168,14 @@ data class DimensionAssessment(
 )
 
 data class DailyScreeningAggregate(
+    val batchId: String,
     val screenedSampleCount: Int,
     val thresholdExceededSampleCount: Int,
     val interventionNeeded: Boolean,
 )
 ```
 
-`DimensionAssessment`는 temporary/ephemeral scope이고 `DailyScreeningAggregate`만 필요한 제품 로직에 전달한다. dimension별 상세 count의 장기 저장은 현재 결정하지 않으며 기본 방향은 저장하지 않는 것이다.
+`DimensionAssessment`는 temporary/ephemeral scope이고 `DailyScreeningAggregate`만 필요한 제품 로직에 전달한다. `batchId`는 재시도 시 동일 aggregate commit을 멱등 처리하는 비콘텐츠 ID다. aggregate commit 뒤 sample 전체의 `AGGREGATED` 상태를 원자적으로 확정한 다음 raw를 삭제하고, 부분 purge 실패 재시도에서는 재집계하지 않는다. dimension별 상세 count의 장기 저장은 현재 결정하지 않으며 기본 방향은 저장하지 않는 것이다.
 
 ## 6. Router와 response bank
 
@@ -186,7 +192,7 @@ Router는 A축 prompt, runtime, model artifact, confidence 또는 dimension asse
 - `ContextDigest`는 `digestId`, 기간, schema version, `PeriodAggregate`, `RelationshipSnapshot`, 사전 정의 `DigestHighlight`만 포함한다.
 - 기간 발생량과 누적 관계 상태를 한 필드에 섞지 않는다.
 - arbitrary string highlight와 raw/dimension type의 변환 경로를 만들지 않는다.
-- 평문 digest는 child 내부 builder/sealer 경계를 벗어나지 않는다.
+- 기기 간 네트워크 경로의 평문 digest는 child builder/sealer 경계를 벗어나지 않는다. 케이스 B의 같은 기기 전달은 PIN-authenticated Local Data Gate가 허용한 parent projection만 예외다.
 - Google Tink HPKE/Hybrid Encryption을 기본 후보로 우선 검토하되 실제 Android 지원을 검증한 뒤 구체 template/wire format을 정한다.
 - E2EE 목표는 content confidentiality다. 서버 익명성, unlinkability, traffic-analysis 방지, metadata confidentiality, 강한 forward secrecy를 주장하지 않는다.
 - ephemeral sender key는 메시지별 key/HPKE encapsulation 용도이며 발신자 추적 방지 수단이 아니다.
@@ -197,17 +203,20 @@ delivery lifecycle:
 CREATED → SEALED → WAITING_FOR_PARENT → SENT → ACKED → PURGED
 ```
 
-child는 encrypted `PendingDigestStore`에 ACK 전까지 보존한다. backend는 rendezvous/byte relay만 하고 ciphertext mailbox/history를 보관하지 않는다. parent가 offline이면 child가 재전송한다. parent는 `digestId`로 중복 수신을 막고 ACK는 idempotent해야 한다. ACK 이후 pending digest와 해당 source aggregate를 정리한다.
+`CREATED`는 봉인 전 lifecycle이고, `PURGED`는 pending record가 삭제된 상태다. persisted `PendingDigest`는 ciphertext가 생긴 `SEALED`부터 저장하며 `PURGED`를 `DeliveryState` enum에 남기지 않는다.
+
+child는 encrypted `PendingDigestStore`에 ACK 전까지 보존한다. 봉인 호출은 선택한 trusted parent device의 recipient public key를 명시적으로 받아야 하며 pending delivery는 `(digestId, recipientDeviceId)`로 구분한다. 이 복합 키는 single recipient와 향후 fan-out 양쪽을 표현할 뿐 fan-out 정책을 확정하지 않는다. backend는 rendezvous/byte relay만 하고 ciphertext mailbox/history를 보관하지 않는다. parent가 offline이면 child가 재전송한다. parent는 digest 저장과 processed `digestId` 기록을 원자적으로 처리해 중복 수신을 막는다. ACK는 인증된 parent relay peer에서 온 것이고 pending recipient와 일치할 때만 수락하며 idempotent해야 한다. 전송 성공 뒤 `SENT` 기록 전에 ACK가 도착한 race에서는 원자적 상태 전이로 `WAITING_FOR_PARENT → ACKED`를 허용한다. ACK 이후 해당 pending delivery를 삭제하고, source aggregate 정리는 추후 확정될 recipient 완료 정책을 적용한다.
 
 ## 8. 케이스 B Parent Gate
 
 - `ParentGate`는 `ParentAuthState.LOCKED`/`AUTHENTICATED`를 관리한다.
 - `ParentModeSession`은 성공한 인증 뒤 제한된 capability를 발급한다.
+- `SharedDeviceChildModeBoundary`는 PIN 검증 전에 active child session을 끝내 부모 모드와 sensing이 동시에 활성화되지 않게 한다.
 - `ParentPinCredentialStore`는 PIN verifier를 secure local storage에 보관하고 verification operation만 노출한다. plaintext PIN 조회 API를 만들지 않는다.
 - `ParentDigestSource`는 허용된 `ContextDigest`/parent projection만 반환한다.
 - 접근 결과는 `ParentDataAccess.Granted`/`Denied`처럼 명시적으로 표현한다.
 - child mode에서 parent mode로 단순 flag 전환하지 않는다.
-- parent settings와 digest 조회 모두 PIN 인증을 요구한다.
+- parent settings와 digest 조회 모두 유효한 `ParentModeSession` capability와 PIN 인증을 요구한다.
 - biometric은 교체 가능한 abstraction만 고려하고 구현은 Open Issue다.
 
 parent domain에서는 `EphemeralSignal`, screenshot, screening state, dimension assessment, 전체 `RelationshipState`, child raw-store handle을 얻을 수 없어야 한다.
@@ -242,7 +251,7 @@ parent domain에서는 `EphemeralSignal`, screenshot, screening state, dimension
 ## 11. 빌드·검증
 
 - Gradle Kotlin DSL + version catalog, `minSdk = 26`, `compileSdk/targetSdk = 35`를 현재 기준으로 삼는다.
-- ML runtime은 feature flag/adapter 뒤에 두어 모델 artifact 없이도 앱 골격과 unit test가 빌드되어야 한다.
+- A축 runtime과 향후 ML Router는 서로 다른 feature flag/adapter 뒤에 두며, 모델 artifact 없이도 앱 골격과 unit test가 빌드되어야 한다.
 - 빌드: `./gradlew :app:assembleDebug`
 - 단위 테스트: `./gradlew :app:testDebugUnitTest`
 - Android SDK가 필요한 lint/instrumentation 결과와 pure JVM unit test 결과를 구분해 보고한다.

@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * 홈(요정 상시 화면) 상태 (CLAUDE.md §10-1~2).
+ * 홈(요정 데모 화면) 상태 (CLAUDE.md §12).
  *
  * 데모 흐름(모델 없이): 상황 컨텍스트 → [Router] (규칙) → [FairyIntent] → [ResponseBank] 선택 → 요정이 '말함'.
  * 불변식 #3: 화면에 뜨는 문장은 전량 responsebank 에서 온다. 라우터는 intent 만 만든다.

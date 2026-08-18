@@ -35,9 +35,10 @@ enum class DigestHighlight {
 /**
  * 부모에게 내보내는 유일한 행동 데이터 산출물.
  *
- * 평문은 자녀 기기 안에서만 만들어지고 즉시 [DigestSealer]로 봉인된다. E2EE의 목표는
- * 이 내용의 기밀성이다. 서비스 운영용 device/pairing/routing/connection metadata까지 숨기거나
- * 서버 unlinkability·트래픽 분석 방지·강한 forward secrecy를 제공한다고 주장하지 않는다.
+ * 평문은 자녀 기기 안에서만 만든다. 기기 간 전송 경로에서는 즉시 [DigestSealer]로 봉인하며,
+ * 공유 기기 안의 부모 영역에는 PIN 인증을 거친 Local Data Gate를 통해서만 전달할 수 있다.
+ * E2EE의 목표는 이 내용의 기밀성이다. 서비스 운영용 device/pairing/routing/connection metadata까지
+ * 숨기거나 서버 unlinkability·트래픽 분석 방지·강한 forward secrecy를 제공한다고 주장하지 않는다.
  */
 @Serializable
 data class ContextDigest(
@@ -78,5 +79,21 @@ class EncryptedDigest(
         require(routingToken.isNotBlank()) { "routingToken must not be blank" }
         require(cryptoVersion > 0) { "cryptoVersion must be positive" }
         require(ciphertext.isNotEmpty()) { "ciphertext must not be empty" }
+    }
+}
+
+/**
+ * 봉인 시 선택한 trusted parent device의 recipient material.
+ * public keyset은 해당 봉인 호출 동안만 사용하고 pending/network DTO에 복사하지 않는다.
+ */
+class DigestRecipient(
+    val parentDeviceId: String,
+    val publicKeyset: ByteArray,
+    val trustedSetRevision: Long,
+) {
+    init {
+        require(parentDeviceId.isNotBlank()) { "parentDeviceId must not be blank" }
+        require(publicKeyset.isNotEmpty()) { "publicKeyset must not be empty" }
+        require(trustedSetRevision >= 0) { "trustedSetRevision must not be negative" }
     }
 }

@@ -1,7 +1,6 @@
 # Version catalog for child-android.
-# ML runtime deps (MediaPipe / LiteRT / MLC) are intentionally NOT declared here yet;
-# they are gated behind the `mlInference` build flag (see app/build.gradle.kts and
-# CLAUDE.md §9) so the app skeleton builds and runs without any on-device model.
+# Shieldstral/llama.cpp Android와 향후 별도 ML Router의 runtime dependency는 아직 선언하지 않는다.
+# 두 runtime은 독립 flag/adapter로 검증하며 골격 빌드는 어떤 on-device model에도 의존하지 않는다.
 [versions]
 agp = "8.7.3"
 kotlin = "2.1.0"

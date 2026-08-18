@@ -18,9 +18,10 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 온디바이스 ML 런타임은 feature flag로 분리(CLAUDE.md §9).
-        // 골격 빌드는 모델 없이도 돌아야 한다 → 기본값 false.
-        buildConfigField("boolean", "ML_INFERENCE_ENABLED", "false")
+        // A축 Shieldstral runtime과 향후 ML Router는 서로 독립된 feature flag로 검증한다.
+        // 골격 빌드는 어떤 모델 artifact 없이도 돌아야 한다 → 둘 다 기본값 false.
+        buildConfigField("boolean", "AXIS_A_SCREENING_ENABLED", "false")
+        buildConfigField("boolean", "ML_ROUTER_ENABLED", "false")
     }
 
     buildTypes {
@@ -63,8 +64,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
-    // 관계/기억/집계 상태 암호화 저장(localstore). 최종은 libsodium/Tink + Keystore/StrongBox
-    // (CLAUDE.md §2, ../../docs/50)로 교체 예정. 골격 단계는 Jetpack Security로 EncryptedFile 게이트만.
+    // 관계/기억/집계 상태의 현 골격 저장소. production 키 수명주기와 저장 primitive는
+    // Android Keystore/secure storage 기준으로 docs/50 §4 검증 뒤 확정한다.
     implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)

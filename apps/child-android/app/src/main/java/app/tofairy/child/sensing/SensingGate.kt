@@ -36,10 +36,22 @@ object SensingGate {
     val activeSessionIdentity: FairySessionIdentity?
         get() = synchronized(lock) { activeSession?.identity }
 
-    /** 게이트가 열린 순간에만 접근 가능한 신호 싱크. 닫힌 상태에서는 항상 null이다. */
+    /**
+     * 게이트가 열린 순간에만 발급되는 취소 가능한 신호 capability.
+     * 반환값을 캐시해도 각 호출 시 같은 session binding과 세 조건을 다시 확인한다.
+     */
     val sink: SignalSink?
         get() = synchronized(lock) {
-            activeSession?.sink.takeIf { isOpenLocked() }
+            val binding = activeSession?.takeIf { isOpenLocked() } ?: return@synchronized null
+            SignalSink { signal ->
+                synchronized(lock) {
+                    if (activeSession === binding && isOpenLocked()) {
+                        binding.sink.onSignal(signal)
+                    } else {
+                        signal.discard()
+                    }
+                }
+            }
         }
 
     val isOpen: Boolean
@@ -49,22 +61,10 @@ object SensingGate {
      * 최신 동의 상태를 적용한다. REVOKED/UNKNOWN을 수신하면 활성 세션 중에도 즉시 닫힌다.
      * 세션 바인딩 자체는 유지하므로, 적법한 재동의가 확인되면 같은 활성 세션에서 다시 열 수 있다.
      */
-    fun setConsentState(state: ConsentState) {
+    internal fun applyAuthoritativeConsentState(state: ConsentState) {
         synchronized(lock) {
             currentConsentState = state
         }
-    }
-
-    /**
-     * 구형 온보딩 호출부의 일시적 컴파일 호환용이다.
-     * 신규 코드는 반드시 [setConsentState]와 명시적 [ConsentState]를 사용해야 한다.
-     */
-    @Deprecated(
-        message = "Use setConsentState(ConsentState) so UNKNOWN and REVOKED remain distinct",
-        replaceWith = ReplaceWith("setConsentState(if (confirmed) ConsentState.CONFIRMED else ConsentState.REVOKED)"),
-    )
-    fun setConsent(confirmed: Boolean) {
-        setConsentState(if (confirmed) ConsentState.CONFIRMED else ConsentState.REVOKED)
     }
 
     /** 세션 생성 경로 외부에서 호출하지 않는다. 동일 프로세스에서 활성 세션은 하나뿐이다. */

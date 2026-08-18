@@ -15,8 +15,8 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <!--
-      INTERNET 은 digest 송신(유일 송신 게이트)에서만 쓰인다.
-      apiclient 는 E2EE 암호문 blob 만 전송한다. (CLAUDE.md §8)
+      INTERNET은 consent/pairing/trusted-device/control/relay에만 쓴다.
+      콘텐츠 관련 송신은 E2EE digest envelope로 한정하며 운영 metadata 노출은 허용한다. (CLAUDE.md §10)
     -->
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -60,8 +60,8 @@
         </service>
 
         <!--
-          요정/센싱 상시 구동 표시(케이스 A). 케이스 B는 세션 동안만 구동.
-          specialUse 사유는 부모 보호자용 동행 센싱이며, 세션 경계 밖에서는 시작조차 안 된다(불변식 #4).
+          명시적 Fairy Session 동안의 요정/센싱 구동 표시. 케이스 A의 장시간 세션과
+          케이스 B의 공유폰 요정 모드 모두 세션 경계 밖에서는 시작하지 않는다.
         -->
         <service
             android:name=".session.FairyForegroundService"

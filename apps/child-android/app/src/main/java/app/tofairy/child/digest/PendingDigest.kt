@@ -9,11 +9,22 @@ enum class DeliveryState {
     ACKED,
 }
 
-/** ACK 뒤 정리해야 할 source aggregate의 기간 식별자. 원시 스크리닝 샘플과는 무관하다. */
+/** recipient 완료 정책이 추적할 source aggregate 기간 식별자. 원시 스크리닝 샘플과는 무관하다. */
 data class SourceAggregateRef(
     val periodStart: Long,
     val periodEnd: Long,
 )
+
+/** fan-out 정책을 확정하지 않고도 수신 기기별 전달 상태를 구분하는 로컬 키. */
+data class DigestDeliveryKey(
+    val digestId: String,
+    val recipientDeviceId: String,
+) {
+    init {
+        require(digestId.isNotBlank()) { "digestId must not be blank" }
+        require(recipientDeviceId.isNotBlank()) { "recipientDeviceId must not be blank" }
+    }
+}
 
 /**
  * 부모 ACK 전까지 자녀 기기에 유지하는 암호문.
@@ -22,12 +33,18 @@ data class SourceAggregateRef(
 data class PendingDigest(
     val digestId: String,
     val createdAt: Long,
+    /** 이 암호문을 봉인한 trusted parent device. ACK peer와 일치해야 한다. */
+    val recipientDeviceId: String,
     val encryptedDigest: EncryptedDigest,
     val deliveryState: DeliveryState,
     val sourceAggregate: SourceAggregateRef,
 ) {
+    val deliveryKey: DigestDeliveryKey
+        get() = DigestDeliveryKey(digestId, recipientDeviceId)
+
     init {
         require(digestId == encryptedDigest.digestId) { "pending/envelope digestId mismatch" }
+        require(recipientDeviceId.isNotBlank()) { "recipientDeviceId must not be blank" }
         require(deliveryState != DeliveryState.CREATED) {
             "CREATED state has no ciphertext and must not be persisted as PendingDigest"
         }
@@ -61,15 +78,30 @@ data class PendingDigest(
  */
 interface PendingDigestStore {
     suspend fun save(pending: PendingDigest)
-    suspend fun find(digestId: String): PendingDigest?
-    suspend fun replace(pending: PendingDigest)
-    suspend fun purgeAcknowledged(digestId: String)
-    suspend fun wasAcknowledged(digestId: String): Boolean
+    suspend fun find(key: DigestDeliveryKey): PendingDigest?
+    /**
+     * 현재 상태가 [expectedStates] 중 하나일 때만 [nextState]로 원자적으로 바꾼다.
+     * 현재 레코드(전이 성공 결과 또는 경쟁자가 먼저 바꾼 결과)를 반환하고, 없으면 null을 반환한다.
+     */
+    suspend fun transition(
+        key: DigestDeliveryKey,
+        expectedStates: Set<DeliveryState>,
+        nextState: DeliveryState,
+    ): PendingDigest?
+    /** ACKED 레코드 삭제와 tombstone 기록을 원자적·멱등으로 수행한다. */
+    suspend fun purgeAcknowledged(key: DigestDeliveryKey)
+    suspend fun wasAcknowledged(key: DigestDeliveryKey): Boolean
 }
 
-/** ACK 뒤 해당 digest가 사용한 기간 집계만 정리한다. 구현은 멱등이어야 한다. */
-fun interface SourceAggregateAcknowledger {
-    suspend fun purge(source: SourceAggregateRef)
+/**
+ * delivery ACK를 source aggregate 정책에 반영한다. 구현은 멱등이어야 한다.
+ * 단일 recipient면 즉시 정리할 수 있고, fan-out을 채택하면 확정된 recipient 완료 조건을 적용한다.
+ */
+fun interface SourceAggregateAckPolicy {
+    suspend fun onDeliveryAcknowledged(
+        source: SourceAggregateRef,
+        deliveryKey: DigestDeliveryKey,
+    )
 }
 
 enum class DigestAckResult {
@@ -78,15 +110,17 @@ enum class DigestAckResult {
     UNKNOWN_DIGEST,
 }
 
-/** 부모 기기의 중복 저장 방지용 최소 계약. 구현은 부모의 암호화 로컬 저장소를 사용한다. */
-fun interface ReceivedDigestRegistry {
-    /** 처음 본 digestId이면 true, 이미 처리한 ID이면 false. */
-    suspend fun recordIfAbsent(digestId: String): Boolean
+/**
+ * 부모 기기의 암호화 로컬 저장소 계약.
+ *
+ * 복호화된 digest 저장과 processed digestId 기록을 하나의 원자적 transaction으로 수행해야 한다.
+ * 복호화 또는 저장이 실패하기 전에 ID만 예약하면 재전송을 영구적으로 누락할 수 있으므로 금지한다.
+ */
+fun interface ReceivedDigestStore {
+    /** 처음 정상 저장했으면 true, 이미 원자적으로 저장된 digestId이면 false. */
+    suspend fun storeIfAbsent(digest: ContextDigest): Boolean
 }
 
-class DigestDeduplicator(private val registry: ReceivedDigestRegistry) {
-    suspend fun shouldProcess(digestId: String): Boolean {
-        require(digestId.isNotBlank()) { "digestId must not be blank" }
-        return registry.recordIfAbsent(digestId)
-    }
+class DigestDeduplicator(private val store: ReceivedDigestStore) {
+    suspend fun storeOnce(digest: ContextDigest): Boolean = store.storeIfAbsent(digest)
 }

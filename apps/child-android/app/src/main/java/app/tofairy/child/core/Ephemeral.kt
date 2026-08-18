@@ -11,7 +11,7 @@ package app.tofairy.child.core
  * Claude Code 가드: 이 인터페이스를 구현하는 타입이 Serializable/Parcelable 을 함께 구현하거나,
  * Room/DataStore/파일/Retrofit 바디로 흘러가는 코드는 머지 금지 — 플래그 대상.
  *
- * 일일 A축용 스크린샷은 이 타입을 저장하는 예외가 아니다. 별도의 최소화된 ScreeningSample을
+ * 일일 A축용 스크린샷은 이 타입을 저장하는 예외가 아니다. 별도의 최소화된 `ScreeningSample`을
  * 암호화 임시 저장소에 넣고 배치 성공 뒤 삭제하는 목적 제한 생명주기를 사용한다.
  */
 sealed interface Ephemeral {
@@ -23,8 +23,9 @@ sealed interface Ephemeral {
 }
 
 /**
- * 센싱 단계의 원시 신호(포그라운드 앱, node-tree 텍스트, 전환 이벤트).
- * 메모리 전용. screening 으로 전달 후 즉시 [discard].
+ * 센싱 단계의 라이브 신호(포그라운드 앱, 전환 이벤트와 선택적인 메모리 전용 텍스트).
+ * checkpoint sampler 또는 사용패턴 규칙이 소비한 뒤 즉시 [discard]한다. 일일 screenshot/metadata는
+ * 이 객체 자체를 저장하지 않고 별도의 최소 `ScreeningSample`로 만든다.
  */
 class EphemeralSignal(
     packageName: String,
@@ -48,7 +49,8 @@ class EphemeralSignal(
         }
 
     /**
-     * 화면 텍스트 원문. 오직 screening(A축/B축) 안에서만 읽고, 읽은 즉시 신호를 폐기한다.
+     * 선택적인 화면 텍스트 원문. 현재 AccessibilityService는 이를 수집하지 않는다.
+     * 향후 정당한 메모리 전용 소비자가 생겨도 읽은 즉시 신호를 폐기하고 저장하지 않는다.
      * 절대 로깅/저장/전송하지 말 것.
      */
     val rawText: String?
@@ -71,7 +73,7 @@ class EphemeralSignal(
 }
 
 /**
- * 저장하지 않는 즉시 처리 경로용 콘텐츠 핸들. 일일 A축의 암호화 [ScreeningSample]과는 별개다.
+ * 저장하지 않는 즉시 처리 경로용 콘텐츠 핸들. 일일 A축의 암호화 `ScreeningSample`과는 별개다.
  * 이 객체를 사용한 즉시 판단이 있다면 호출 종료와 함께 폐기한다.
  */
 class EphemeralContent(
@@ -109,7 +111,8 @@ class EphemeralContent(
 
 /**
  * 폐기 보장 헬퍼: [block] 실행 후 항상 [Ephemeral.discard] 한다.
- * 모든 screening/router 진입점은 ephemeral 입력을 이 헬퍼로 감싸 누수를 구조적으로 막는다.
+ * 라이브 ephemeral 신호 소비 진입점은 이 헬퍼로 감싸 누수를 구조적으로 막는다.
+ * 일일 batch의 encrypted `ScreeningSample` lifecycle에는 이 타입을 사용하지 않는다.
  */
 inline fun <E : Ephemeral, R> E.consume(block: (E) -> R): R =
     try {

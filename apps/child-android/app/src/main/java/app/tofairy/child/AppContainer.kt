@@ -2,7 +2,9 @@ package app.tofairy.child
 
 import android.content.Context
 import app.tofairy.child.apiclient.ApiClient
+import app.tofairy.child.apiclient.ConsentSynchronizer
 import app.tofairy.child.apiclient.MockApiClient
+import app.tofairy.child.apiclient.NoopConsentControlChannel
 import app.tofairy.child.localstore.EncryptedRelationshipStore
 import app.tofairy.child.localstore.RelationshipStore
 import app.tofairy.child.responsebank.AssetAudioPlayer
@@ -24,9 +26,13 @@ class AppContainer(context: Context) {
     val audioPlayer: AudioPlayer by lazy { AssetAudioPlayer(appContext) }
     val relationshipStore: RelationshipStore by lazy { EncryptedRelationshipStore(appContext) }
     val apiClient: ApiClient by lazy { MockApiClient() }
+    val consentSynchronizer: ConsentSynchronizer by lazy {
+        ConsentSynchronizer(apiClient, NoopConsentControlChannel)
+    }
 
     val router: Router by lazy {
-        // if (BuildConfig.ML_INFERENCE_ENABLED) VerifiedMlRouter(...) else RuleBasedRouter()
+        // if (BuildConfig.ML_ROUTER_ENABLED) VerifiedMlRouter(...) else RuleBasedRouter()
+        // AXIS_A_SCREENING_ENABLED는 이 선택과 별개의 일일 screening adapter 플래그다.
         RuleBasedRouter()
     }
 }

@@ -11,11 +11,12 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import app.tofairy.child.R
+import app.tofairy.child.sensing.SensingGate
 
 /**
- * 요정/센싱 상시 구동 표시 (CLAUDE.md §4).
- *  - 케이스 A: 상시 구동.
- *  - 케이스 B: 세션 동안만 시작/종료.
+ * 명시적으로 시작된 Fairy Session의 장시간 실행 표시 (CLAUDE.md §4).
+ *  - 케이스 A: 명시적으로 시작한 장시간 Fairy Session 동안 구동.
+ *  - 케이스 B: 명시적인 공유폰 요정 모드 세션 동안만 시작/종료.
  * 포그라운드 알림으로 구동을 투명하게 드러낸다(아이/부모 모두에게).
  */
 class FairyForegroundService : Service() {
@@ -23,8 +24,13 @@ class FairyForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // START_STICKY 재생성이나 임의 호출로 세션 경계를 우회하지 않는다.
+        if (SensingGate.activeSessionIdentity == null) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         startForegroundCompat()
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startForegroundCompat() {
@@ -67,6 +73,9 @@ class FairyForegroundService : Service() {
         private const val NOTIFICATION_ID = 1001
 
         fun start(context: Context) {
+            check(SensingGate.activeSessionIdentity != null) {
+                "FairyForegroundService requires an explicit active Fairy Session"
+            }
             context.startForegroundService(Intent(context, FairyForegroundService::class.java))
         }
 

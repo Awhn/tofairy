@@ -5,10 +5,10 @@ import app.tofairy.child.screening.axisa.AgeSuitability
 import app.tofairy.child.screening.axisb.UsagePatternSignal
 
 /**
- * 결정적 규칙 라우터 (CLAUDE.md §10-4 "router(규칙 버전)").
+ * 결정적 규칙 라우터 (CLAUDE.md §6).
  *
  * 우선순위(높음 → 낮음):
- *  1) A축 부적절 콘텐츠 → 부드러운 한 번 묻기(차단 아님, 불변식 #7)
+ *  1) 일일 A축의 현재 연령 경계 초과 집계 → 부드러운 회고(실시간 차단 아님)
  *  2) B축 사용패턴 신호 → 휴식 권유
  *  3) 약속 진행 상태 → 체크인
  *  4) 그 외 한가하면 가벼운 인사(과도한 개입 억제)

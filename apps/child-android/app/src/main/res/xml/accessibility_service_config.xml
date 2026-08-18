@@ -2,13 +2,14 @@
 <!--
   센싱 파이프라인의 입력 채널 설정.
   - node-tree 원문은 수집하지 않는다. 이벤트는 screenshot checkpoint 후보를 알리는 신호다.
-  - 세션(케이스 B) 밖에서는 SensingAccessibilityService 가 신호를 router 로 흘리지 않는다(불변식 #4).
-  canRetrieveWindowContent 사용 필요성은 sampler 구현 전 재검토한다. A축은 실시간 node-text 판정이 아니다.
+  - 케이스 A/B 모두 명시적 세션 밖에서는 SensingAccessibilityService가 신호를 흘리지 않는다(불변식 #4).
+  현재 골격은 window content retrieval과 screenshot capability를 요청하지 않는다. 실제 checkpoint
+  capture 구현 시 지원 API·동의 UX·gate·암호화 저장을 함께 검증한 뒤 최소 capability만 추가한다.
 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows"
-    android:canRetrieveWindowContent="true"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="false"
     android:description="@string/sensing_service_description"
     android:notificationTimeout="300" />

@@ -29,6 +29,11 @@ fun interface ParentDigestSource {
     fun readDigests(): List<ContextDigest>
 }
 
+/** 공유 기기에서 부모 인증을 시작하기 전에 active child Fairy Session을 끝내는 경계. */
+fun interface SharedDeviceChildModeBoundary {
+    fun closeChildMode()
+}
+
 sealed interface ParentAuthenticationResult {
     data class Authenticated(val session: ParentModeSession) : ParentAuthenticationResult
     data object Rejected : ParentAuthenticationResult
@@ -37,6 +42,12 @@ sealed interface ParentAuthenticationResult {
 sealed interface ParentDataAccess {
     data class Granted(val digests: List<ContextDigest>) : ParentDataAccess
     data object Denied : ParentDataAccess
+}
+
+/** 설정 화면 진입 capability 확인 결과. 실제 설정 값이나 child store handle을 포함하지 않는다. */
+enum class ParentSettingsAccess {
+    GRANTED,
+    DENIED,
 }
 
 /**
@@ -52,6 +63,8 @@ class ParentModeSession internal constructor(
 
     fun readDigests(): ParentDataAccess = gate.readDigests(token)
 
+    fun accessSettings(): ParentSettingsAccess = gate.accessSettings(token)
+
     override fun close() {
         gate.lock(token)
     }
@@ -66,6 +79,7 @@ class ParentModeSession internal constructor(
 class ParentGate(
     private val credentialStore: ParentPinCredentialStore,
     digestSource: ParentDigestSource,
+    private val childModeBoundary: SharedDeviceChildModeBoundary,
 ) {
     private val lock = Any()
     private val localDataGate = LocalDataGate(digestSource)
@@ -84,6 +98,8 @@ class ParentGate(
         pin.fill(CLEARED_CHAR)
 
         return try {
+            // PIN 성공 여부와 무관하게 부모 UI가 열린 동안 child sensing이 동시에 살아 있지 않게 한다.
+            childModeBoundary.closeChildMode()
             synchronized(lock) {
                 activeToken = null
                 authState = ParentAuthState.LOCKED
@@ -128,6 +144,14 @@ class ParentGate(
             return@synchronized ParentDataAccess.Denied
         }
         ParentDataAccess.Granted(localDataGate.readDigests())
+    }
+
+    internal fun accessSettings(token: Long): ParentSettingsAccess = synchronized(lock) {
+        if (authState == ParentAuthState.AUTHENTICATED && activeToken == token) {
+            ParentSettingsAccess.GRANTED
+        } else {
+            ParentSettingsAccess.DENIED
+        }
     }
 
     private companion object {

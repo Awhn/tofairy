@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import app.tofairy.child.ui.FairyStage
 
 /**
- * 온보딩 각성 의식 화면 (CLAUDE.md §10-1). 모델 없이 더미 intent + responsebank 로 동작.
+ * 온보딩 각성 의식 화면 (CLAUDE.md §12). 모델 없이 더미 intent + responsebank 로 동작.
  * 마지막 단계는 동의 게이트(#6).
  */
 @Composable
@@ -93,12 +93,17 @@ fun OnboardingScreen(
                         text = "보호자 확인이 필요해요.\n선택된 화면 샘플은 이 기기에 암호화해 잠깐 보관하고 하루 점검이 끝나면 삭제합니다. 원본은 서버나 부모 기기로 보내지 않습니다.",
                         textAlign = TextAlign.Center,
                     )
+                    ui.consentMessage?.let {
+                        Text(text = it, textAlign = TextAlign.Center)
+                    }
                     Button(
-                        onClick = { viewModel.onConsentDecision(true) },
+                        onClick = viewModel::onCheckParentConsent,
+                        enabled = !ui.checkingConsent,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("동의하고 시작하기") }
+                    ) { Text(if (ui.checkingConsent) "확인 중…" else "보호자 동의 상태 확인") }
                     OutlinedButton(
-                        onClick = { viewModel.onConsentDecision(false) },
+                        onClick = viewModel::onDeferConsent,
+                        enabled = !ui.checkingConsent,
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("나중에 할게요") }
                 }
